@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.springframework.restdocs.mockmvc;
+package org.springframework.restdocs.config;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
-import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.restdocs.RestDocumentationContext;
 import org.springframework.restdocs.curl.CurlDocumentation;
 import org.springframework.restdocs.http.HttpDocumentation;
 import org.springframework.restdocs.snippet.Snippet;
@@ -27,11 +28,16 @@ import org.springframework.restdocs.snippet.WriterResolver;
 
 /**
  * A configurer that can be used to configure the generated documentation snippets.
- *
+ * @param <P> The type of the configurer's parent
+ * @param <T> The concrete type of the configurer to be returned from chained methods
  * @author Andy Wilkinson
  */
-public class SnippetConfigurer extends
-		AbstractNestedConfigurer<RestDocumentationMockMvcConfigurer> {
+public abstract class SnippetConfigurer<P, T> extends AbstractNestedConfigurer<P> {
+
+	/**
+	 * The name of the attribute that is used to hold the default snippets.
+	 */
+	public static final String ATTRIBUTE_DEFAULT_SNIPPETS = "org.springframework.restdocs.defaultSnippets";
 
 	private List<Snippet> defaultSnippets = Arrays.asList(
 			CurlDocumentation.curlRequest(), HttpDocumentation.httpRequest(),
@@ -46,8 +52,20 @@ public class SnippetConfigurer extends
 
 	private String snippetEncoding = DEFAULT_SNIPPET_ENCODING;
 
-	SnippetConfigurer(RestDocumentationMockMvcConfigurer parent) {
+	/**
+	 * Creates a new {@code SnippetConfigurer} with the given {@code parent}.
+	 *
+	 * @param parent the parent
+	 */
+	protected SnippetConfigurer(P parent) {
 		super(parent);
+	}
+
+	@Override
+	public void apply(Map<String, Object> configuration, RestDocumentationContext context) {
+		((WriterResolver) configuration.get(WriterResolver.class.getName()))
+				.setEncoding(this.snippetEncoding);
+		configuration.put(ATTRIBUTE_DEFAULT_SNIPPETS, this.defaultSnippets);
 	}
 
 	/**
@@ -57,17 +75,10 @@ public class SnippetConfigurer extends
 	 * @param encoding the encoding
 	 * @return {@code this}
 	 */
-	public SnippetConfigurer withEncoding(String encoding) {
+	@SuppressWarnings("unchecked")
+	public T withEncoding(String encoding) {
 		this.snippetEncoding = encoding;
-		return this;
-	}
-
-	@Override
-	void apply(MockHttpServletRequest request) {
-		((WriterResolver) request.getAttribute(WriterResolver.class.getName()))
-				.setEncoding(this.snippetEncoding);
-		request.setAttribute("org.springframework.restdocs.mockmvc.defaultSnippets",
-				this.defaultSnippets);
+		return (T) this;
 	}
 
 	/**
@@ -76,8 +87,9 @@ public class SnippetConfigurer extends
 	 * @param defaultSnippets the default snippets
 	 * @return {@code this}
 	 */
-	public SnippetConfigurer withDefaults(Snippet... defaultSnippets) {
+	@SuppressWarnings("unchecked")
+	public T withDefaults(Snippet... defaultSnippets) {
 		this.defaultSnippets = Arrays.asList(defaultSnippets);
-		return this;
+		return (T) this;
 	}
 }

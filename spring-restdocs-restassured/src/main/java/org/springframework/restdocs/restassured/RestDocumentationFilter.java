@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package org.springframework.restdocs.mockmvc;
+package org.springframework.restdocs.restassured;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,18 +32,19 @@ import org.springframework.restdocs.operation.StandardOperation;
 import org.springframework.restdocs.operation.preprocess.OperationRequestPreprocessor;
 import org.springframework.restdocs.operation.preprocess.OperationResponsePreprocessor;
 import org.springframework.restdocs.snippet.Snippet;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.ResultHandler;
-import org.springframework.util.Assert;
+
+import com.jayway.restassured.filter.Filter;
+import com.jayway.restassured.filter.FilterContext;
+import com.jayway.restassured.response.Response;
+import com.jayway.restassured.specification.FilterableRequestSpecification;
+import com.jayway.restassured.specification.FilterableResponseSpecification;
 
 /**
- * A Spring MVC Test {@code ResultHandler} for documenting RESTful APIs.
+ * A REST Assured {@link Filter} for documenting RESTful APIs.
  *
  * @author Andy Wilkinson
- * @author Andreas Evers
- * @see MockMvcRestDocumentation#document(String, Snippet...)
  */
-public class RestDocumentationResultHandler implements ResultHandler {
+public class RestDocumentationFilter implements Filter {
 
 	private final String identifier;
 
@@ -52,30 +54,28 @@ public class RestDocumentationResultHandler implements ResultHandler {
 
 	private final List<Snippet> snippets;
 
-	RestDocumentationResultHandler(String identifier, Snippet... snippets) {
+	RestDocumentationFilter(String identifier, Snippet... snippets) {
 		this(identifier, new IdentityOperationRequestPreprocessor(),
 				new IdentityOperationResponsePreprocessor(), snippets);
 	}
 
-	RestDocumentationResultHandler(String identifier,
-			OperationRequestPreprocessor requestPreprocessor, Snippet... snippets) {
-		this(identifier, requestPreprocessor,
+	RestDocumentationFilter(String identifier,
+			OperationRequestPreprocessor operationRequestPreprocessor,
+			Snippet... snippets) {
+		this(identifier, operationRequestPreprocessor,
 				new IdentityOperationResponsePreprocessor(), snippets);
 	}
 
-	RestDocumentationResultHandler(String identifier,
-			OperationResponsePreprocessor responsePreprocessor, Snippet... snippets) {
+	RestDocumentationFilter(String identifier,
+			OperationResponsePreprocessor operationResponsePreprocessor,
+			Snippet... snippets) {
 		this(identifier, new IdentityOperationRequestPreprocessor(),
-				responsePreprocessor, snippets);
+				operationResponsePreprocessor, snippets);
 	}
 
-	RestDocumentationResultHandler(String identifier,
+	RestDocumentationFilter(String identifier,
 			OperationRequestPreprocessor requestPreprocessor,
 			OperationResponsePreprocessor responsePreprocessor, Snippet... snippets) {
-		Assert.notNull(identifier, "identifier must be non-null");
-		Assert.notNull(requestPreprocessor, "requestPreprocessor must be non-null");
-		Assert.notNull(responsePreprocessor, "responsePreprocessor must be non-null");
-		Assert.notNull(snippets, "snippets must be non-null");
 		this.identifier = identifier;
 		this.requestPreprocessor = requestPreprocessor;
 		this.responsePreprocessor = responsePreprocessor;
@@ -83,29 +83,41 @@ public class RestDocumentationResultHandler implements ResultHandler {
 	}
 
 	@Override
-	public void handle(MvcResult result) throws Exception {
+	public Response filter(FilterableRequestSpecification requestSpec,
+			FilterableResponseSpecification responseSpec, FilterContext context) {
+		Response response = context.next(requestSpec, responseSpec);
+
+		OperationRequest operationRequest = this.requestPreprocessor
+				.preprocess(new RestAssuredOperationRequestFactory()
+						.createOperationRequest(requestSpec));
+		OperationResponse operationResponse = this.responsePreprocessor
+				.preprocess(new RestAssuredOperationResponseFactory()
+						.createOperationResponse(response));
+
+		RestDocumentationContext documentationContext = context
+				.getValue(RestDocumentationContext.class.getName());
+
 		Map<String, Object> attributes = new HashMap<>();
-		attributes.put(RestDocumentationContext.class.getName(), result.getRequest()
-				.getAttribute(RestDocumentationContext.class.getName()));
-		attributes.put("org.springframework.restdocs.urlTemplate", result.getRequest()
-				.getAttribute("org.springframework.restdocs.urlTemplate"));
-		@SuppressWarnings("unchecked")
-		Map<String, Object> configuration = (Map<String, Object>) result.getRequest()
-				.getAttribute("org.springframework.restdocs.configuration");
+		attributes.put(RestDocumentationContext.class.getName(), documentationContext);
+		attributes.put("org.springframework.restdocs.urlTemplate",
+				requestSpec.getUserDefinedPath());
+		Map<String, Object> configuration = context
+				.getValue("org.springframework.restdocs.configuration");
 		attributes.putAll(configuration);
 
-		OperationRequest request = this.requestPreprocessor
-				.preprocess(new MockMvcOperationRequestFactory()
-						.createOperationRequest(result.getRequest()));
+		Operation operation = new StandardOperation(this.identifier, operationRequest,
+				operationResponse, attributes);
 
-		OperationResponse response = this.responsePreprocessor
-				.preprocess(new MockMvcOperationResponseFactory()
-						.createOperationResponse(result.getResponse()));
-		Operation operation = new StandardOperation(this.identifier, request, response,
-				attributes);
-		for (Snippet snippet : getSnippets(result)) {
-			snippet.document(operation);
+		try {
+			for (Snippet snippet : getSnippets(configuration)) {
+				snippet.document(operation);
+			}
 		}
+		catch (IOException ex) {
+			throw new RuntimeException(ex);
+		}
+
+		return response;
 	}
 
 	/**
@@ -113,18 +125,17 @@ public class RestDocumentationResultHandler implements ResultHandler {
 	 * handler is called.
 	 *
 	 * @param snippets the snippets to add
-	 * @return this {@code ResultDocumentationResultHandler}
+	 * @return this {@code RestDocumentationFilter}
 	 */
-	public RestDocumentationResultHandler snippets(Snippet... snippets) {
+	public RestDocumentationFilter snippets(Snippet... snippets) {
 		this.snippets.addAll(Arrays.asList(snippets));
 		return this;
 	}
 
 	@SuppressWarnings("unchecked")
-	private List<Snippet> getSnippets(MvcResult result) {
+	private List<Snippet> getSnippets(Map<String, Object> configuration) {
 		List<Snippet> combinedSnippets = new ArrayList<>(
-				(List<Snippet>) ((Map<String, Object>) result.getRequest().getAttribute(
-						"org.springframework.restdocs.configuration"))
+				(List<Snippet>) configuration
 						.get(SnippetConfigurer.ATTRIBUTE_DEFAULT_SNIPPETS));
 		combinedSnippets.addAll(this.snippets);
 		return combinedSnippets;

@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-package org.springframework.restdocs.mockmvc;
-
-import org.springframework.test.web.servlet.setup.MockMvcConfigurer;
+package org.springframework.restdocs.config;
 
 /**
  * A configurer that is nested and, therefore, has a parent.
  *
- * @param <PARENT> The parent's type
+ * @param <P> The parent's type
  * @author Andy Wilkinson
  */
-interface NestedConfigurer<PARENT extends MockMvcConfigurer> {
+interface NestedConfigurer<P> {
 
 	/**
 	 * Returns the configurer's parent.
 	 *
 	 * @return the parent
 	 */
-	PARENT and();
+	P and();
 }

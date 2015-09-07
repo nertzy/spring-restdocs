@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.example;
+package com.example.mockmvc;
 
 import org.junit.Before;
+import org.junit.Rule;
+import org.springframework.restdocs.RestDocumentation;
 import org.springframework.restdocs.mockmvc.RestDocumentationResultHandler;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -25,6 +27,7 @@ import org.springframework.web.context.WebApplicationContext;
 import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.linkWithRel;
 import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.links;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessRequest;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessResponse;
@@ -33,6 +36,10 @@ import static org.springframework.restdocs.operation.preprocess.Preprocessors.re
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class EveryTestPreprocessing {
+
+	@Rule
+	public final RestDocumentation restDocumentation = new RestDocumentation(
+			"target/generated-snippets");
 
 	private WebApplicationContext context;
 
@@ -48,6 +55,7 @@ public class EveryTestPreprocessing {
 				preprocessRequest(removeHeaders("Foo")),
 				preprocessResponse(prettyPrint()));
 		this.mockMvc = MockMvcBuilders.webAppContextSetup(this.context)
+				.apply(documentationConfiguration(this.restDocumentation))
 				.alwaysDo(this.document) // <2>
 				.build();
 	}

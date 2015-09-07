@@ -14,23 +14,30 @@
  * limitations under the License.
  */
 
-package org.springframework.restdocs.mockmvc;
-
-import org.springframework.mock.web.MockHttpServletRequest;
+package org.springframework.restdocs.config;
 
 /**
- * Abstract configurer that declares methods that are internal to the documentation
- * configuration implementation.
+ * Base class for {@link NestedConfigurer} implementations.
  *
+ * @param <P> The type of the configurer's parent
  * @author Andy Wilkinson
  */
-abstract class AbstractConfigurer {
+public abstract class AbstractNestedConfigurer<P> extends AbstractConfigurer implements
+		NestedConfigurer<P> {
+
+	private final P parent;
 
 	/**
-	 * Applies the configuration, possibly by modifying the given {@code request}.
-	 *
-	 * @param request the request that may be modified
+	 * Creates a new {@code AbstractNestedConfigurer} with the given {@code parent}.
+	 * @param parent the parent
 	 */
-	abstract void apply(MockHttpServletRequest request);
+	protected AbstractNestedConfigurer(P parent) {
+		this.parent = parent;
+	}
+
+	@Override
+	public final P and() {
+		return this.parent;
+	}
 
 }

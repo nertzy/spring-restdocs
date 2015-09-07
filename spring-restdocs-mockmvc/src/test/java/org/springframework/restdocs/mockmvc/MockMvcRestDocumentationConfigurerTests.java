@@ -33,12 +33,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 /**
- * Tests for {@link RestDocumentationMockMvcConfigurer}.
+ * Tests for {@link MockMvcRestDocumentationConfigurer}.
  *
  * @author Andy Wilkinson
  * @author Dmitriy Mayboroda
  */
-public class RestDocumentationConfigurerTests {
+public class MockMvcRestDocumentationConfigurerTests {
 
 	private MockHttpServletRequest request = new MockHttpServletRequest();
 
@@ -47,7 +47,7 @@ public class RestDocumentationConfigurerTests {
 
 	@Test
 	public void defaultConfiguration() {
-		RequestPostProcessor postProcessor = new RestDocumentationMockMvcConfigurer(
+		RequestPostProcessor postProcessor = new MockMvcRestDocumentationConfigurer(
 				this.restDocumentation).beforeMockMvcCreated(null, null);
 		postProcessor.postProcessRequest(this.request);
 
@@ -56,7 +56,7 @@ public class RestDocumentationConfigurerTests {
 
 	@Test
 	public void customScheme() {
-		RequestPostProcessor postProcessor = new RestDocumentationMockMvcConfigurer(
+		RequestPostProcessor postProcessor = new MockMvcRestDocumentationConfigurer(
 				this.restDocumentation).uris().withScheme("https")
 				.beforeMockMvcCreated(null, null);
 		postProcessor.postProcessRequest(this.request);
@@ -66,7 +66,7 @@ public class RestDocumentationConfigurerTests {
 
 	@Test
 	public void customHost() {
-		RequestPostProcessor postProcessor = new RestDocumentationMockMvcConfigurer(
+		RequestPostProcessor postProcessor = new MockMvcRestDocumentationConfigurer(
 				this.restDocumentation).uris().withHost("api.example.com")
 				.beforeMockMvcCreated(null, null);
 		postProcessor.postProcessRequest(this.request);
@@ -76,7 +76,7 @@ public class RestDocumentationConfigurerTests {
 
 	@Test
 	public void customPort() {
-		RequestPostProcessor postProcessor = new RestDocumentationMockMvcConfigurer(
+		RequestPostProcessor postProcessor = new MockMvcRestDocumentationConfigurer(
 				this.restDocumentation).uris().withPort(8081)
 				.beforeMockMvcCreated(null, null);
 		postProcessor.postProcessRequest(this.request);
@@ -86,7 +86,7 @@ public class RestDocumentationConfigurerTests {
 
 	@Test
 	public void noContentLengthHeaderWhenRequestHasNotContent() {
-		RequestPostProcessor postProcessor = new RestDocumentationMockMvcConfigurer(
+		RequestPostProcessor postProcessor = new MockMvcRestDocumentationConfigurer(
 				this.restDocumentation).uris().withPort(8081)
 				.beforeMockMvcCreated(null, null);
 		postProcessor.postProcessRequest(this.request);

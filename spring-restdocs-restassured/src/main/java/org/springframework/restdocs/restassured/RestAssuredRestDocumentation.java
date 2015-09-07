@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,54 +14,34 @@
  * limitations under the License.
  */
 
-package org.springframework.restdocs.mockmvc;
+package org.springframework.restdocs.restassured;
 
 import org.springframework.restdocs.RestDocumentation;
 import org.springframework.restdocs.operation.preprocess.OperationRequestPreprocessor;
 import org.springframework.restdocs.operation.preprocess.OperationResponsePreprocessor;
 import org.springframework.restdocs.snippet.Snippet;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.setup.ConfigurableMockMvcBuilder;
-import org.springframework.test.web.servlet.setup.MockMvcConfigurer;
 
 /**
- * Static factory methods for documenting RESTful APIs using Spring MVC Test.
+ * Static factory methods for documenting RESTful APIs using REST Assured.
  *
  * @author Andy Wilkinson
  */
-public abstract class MockMvcRestDocumentation {
+public abstract class RestAssuredRestDocumentation {
 
-	private MockMvcRestDocumentation() {
+	private RestAssuredRestDocumentation() {
 
-	}
-
-	/**
-	 * Provides access to a {@link MockMvcConfigurer} that can be used to configure a
-	 * {@link MockMvc} instance using the given {@code restDocumentation}.
-	 *
-	 * @param restDocumentation the REST documentation
-	 * @return the configurer
-	 * @see ConfigurableMockMvcBuilder#apply(MockMvcConfigurer)
-	 */
-	public static MockMvcRestDocumentationConfigurer documentationConfiguration(
-			RestDocumentation restDocumentation) {
-		return new MockMvcRestDocumentationConfigurer(restDocumentation);
 	}
 
 	/**
 	 * Documents the API call with the given {@code identifier} using the given
-	 * {@code snippets} in addition to any default snippets.
+	 * {@code snippets}.
 	 *
 	 * @param identifier an identifier for the API call that is being documented
-	 * @param snippets the snippets
-	 * @return a Mock MVC {@code ResultHandler} that will produce the documentation
-	 * @see MockMvc#perform(org.springframework.test.web.servlet.RequestBuilder)
-	 * @see ResultActions#andDo(org.springframework.test.web.servlet.ResultHandler)
+	 * @param snippets the snippets that will document the API call
+	 * @return a {@link RestDocumentationFilter} that will produce the documentation
 	 */
-	public static RestDocumentationResultHandler document(String identifier,
-			Snippet... snippets) {
-		return new RestDocumentationResultHandler(identifier, snippets);
+	public static RestDocumentationFilter document(String identifier, Snippet... snippets) {
+		return new RestDocumentationFilter(identifier, snippets);
 	}
 
 	/**
@@ -72,14 +52,11 @@ public abstract class MockMvcRestDocumentation {
 	 * @param identifier an identifier for the API call that is being documented
 	 * @param requestPreprocessor the request preprocessor
 	 * @param snippets the snippets
-	 * @return a Mock MVC {@code ResultHandler} that will produce the documentation
-	 * @see MockMvc#perform(org.springframework.test.web.servlet.RequestBuilder)
-	 * @see ResultActions#andDo(org.springframework.test.web.servlet.ResultHandler)
+	 * @return a {@link RestDocumentationFilter} that will produce the documentation
 	 */
-	public static RestDocumentationResultHandler document(String identifier,
+	public static RestDocumentationFilter document(String identifier,
 			OperationRequestPreprocessor requestPreprocessor, Snippet... snippets) {
-		return new RestDocumentationResultHandler(identifier, requestPreprocessor,
-				snippets);
+		return new RestDocumentationFilter(identifier, requestPreprocessor, snippets);
 	}
 
 	/**
@@ -90,14 +67,11 @@ public abstract class MockMvcRestDocumentation {
 	 * @param identifier an identifier for the API call that is being documented
 	 * @param responsePreprocessor the response preprocessor
 	 * @param snippets the snippets
-	 * @return a Mock MVC {@code ResultHandler} that will produce the documentation
-	 * @see MockMvc#perform(org.springframework.test.web.servlet.RequestBuilder)
-	 * @see ResultActions#andDo(org.springframework.test.web.servlet.ResultHandler)
+	 * @return a {@link RestDocumentationFilter} that will produce the documentation
 	 */
-	public static RestDocumentationResultHandler document(String identifier,
+	public static RestDocumentationFilter document(String identifier,
 			OperationResponsePreprocessor responsePreprocessor, Snippet... snippets) {
-		return new RestDocumentationResultHandler(identifier, responsePreprocessor,
-				snippets);
+		return new RestDocumentationFilter(identifier, responsePreprocessor, snippets);
 	}
 
 	/**
@@ -110,15 +84,25 @@ public abstract class MockMvcRestDocumentation {
 	 * @param requestPreprocessor the request preprocessor
 	 * @param responsePreprocessor the response preprocessor
 	 * @param snippets the snippets
-	 * @return a Mock MVC {@code ResultHandler} that will produce the documentation
-	 * @see MockMvc#perform(org.springframework.test.web.servlet.RequestBuilder)
-	 * @see ResultActions#andDo(org.springframework.test.web.servlet.ResultHandler)
+	 * @return a {@link RestDocumentationFilter} that will produce the documentation
 	 */
-	public static RestDocumentationResultHandler document(String identifier,
+	public static RestDocumentationFilter document(String identifier,
 			OperationRequestPreprocessor requestPreprocessor,
 			OperationResponsePreprocessor responsePreprocessor, Snippet... snippets) {
-		return new RestDocumentationResultHandler(identifier, requestPreprocessor,
+		return new RestDocumentationFilter(identifier, requestPreprocessor,
 				responsePreprocessor, snippets);
+	}
+
+	/**
+	 * Provides access to a {@link RestAssuredRestDocumentationConfigurer} that can be
+	 * used to configure Spring REST Docs using the given {@code restDocumentation}.
+	 *
+	 * @param restDocumentation the REST documentation
+	 * @return the configurer
+	 */
+	public static RestAssuredRestDocumentationConfigurer documentationConfiguration(
+			RestDocumentation restDocumentation) {
+		return new RestAssuredRestDocumentationConfigurer(restDocumentation);
 	}
 
 }
